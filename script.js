@@ -112,7 +112,7 @@ class PomodoroTimer {
         // Open fullscreen window
         const fullscreenWindow = window.open(
             chrome.runtime.getURL('fullscreen.html'),
-            'pomodoro-fullscreen',
+            'lapse-fullscreen',
             'width=800,height=600,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no'
         );
         
@@ -127,7 +127,7 @@ class PomodoroTimer {
         // Open settings page in a new window
         const settingsWindow = window.open(
             chrome.runtime.getURL('settings.html'),
-            'pomodoro-settings',
+            'lapse-settings',
             'width=500,height=700,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no'
         );
         
@@ -609,15 +609,15 @@ class PomodoroTimer {
 
 // Initialize the timer when the popup loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Pomodoro timer initializing...');
+    console.log('Lapse timer initializing...');
     
     // Add a small delay to ensure DOM is fully ready
     setTimeout(() => {
         try {
             new PomodoroTimer();
-            console.log('Pomodoro timer initialized successfully');
+            console.log('Lapse timer initialized successfully');
         } catch (error) {
-            console.error('Error initializing Pomodoro timer:', error);
+            console.error('Error initializing Lapse timer:', error);
         }
     }, 100);
     

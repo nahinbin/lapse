@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Minimal Pomodoro Timer",
+  "name": "Lapse",
   "version": "1.0",
   "description": "A clean and minimal Pomodoro timer for productivity",
   "permissions": [
@@ -8,16 +8,26 @@
     "alarms",
     "notifications"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Pomodoro Timer"
+    "default_title": "Lapse"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["sticker.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["fullscreen.html", "settings.html"],
+      "resources": ["fullscreen.html", "settings.html", "popup.html"],
       "matches": ["<all_urls>"]
     }
   ],

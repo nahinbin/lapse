@@ -1,4 +1,4 @@
-# Testing the Pomodoro Timer Extension
+# Testing the Lapse Extension
 
 ## Quick Test Steps
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Settings</title>
+    <title>Lapse Settings</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Settings-specific styles */
@@ -49,9 +49,10 @@
         }
 
         .settings-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #333;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #111;
+            letter-spacing: -0.01em;
         }
 
         .back-btn {
@@ -73,21 +74,24 @@
         }
 
         .settings-section {
-            margin-bottom: 30px;
+            margin: 18px 0 22px 0;
+            padding-top: 6px;
+            border-top: 1px solid #f2f2f2;
         }
 
         .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #222;
+            margin: 0 0 6px 0;
         }
 
         .setting-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 10px 0;
+            gap: 10px;
         }
 
         .setting-item:last-child {
@@ -96,8 +100,8 @@
 
         .setting-label {
             font-size: 0.95rem;
-            color: #333;
-            font-weight: 500;
+            color: #1a1a1a;
+            font-weight: 600;
         }
 
         .setting-description { display: none; }
@@ -295,6 +299,7 @@
         body.dark-mode .section-title {
             color: #e0e0e0;
         }
+        body.dark-mode .settings-container { border-color: #2a2a2a; }
 
         body.dark-mode .setting-label {
             color: #e0e0e0;
@@ -510,9 +515,9 @@
         </div>
 
         <form id="settingsForm">
-            <!-- Timer Durations Section -->
+            <!-- Timers Section -->
             <div class="settings-section">
-                <h2 class="section-title">Timer Durations</h2>
+                <h2 class="section-title">Timers</h2>
                 
                 <div class="setting-item">
                     <div>
@@ -521,7 +526,7 @@
                     </div>
                     <div class="setting-control">
                         <input type="text" inputmode="none" class="time-input" id="focusMinutes" value="25" readonly>
-                        <span>minutes</span>
+                        <span>mins</span>
                     </div>
                 </div>
 
@@ -532,7 +537,7 @@
                     </div>
                     <div class="setting-control">
                         <input type="text" inputmode="none" class="time-input" id="breakMinutes" value="5" readonly>
-                        <span>minutes</span>
+                        <span>mins</span>
                     </div>
                 </div>
 
@@ -549,10 +554,10 @@
                 </div>
             </div>
 
-            <!-- Notifications Section -->
+            <!-- Preferences Section -->
             <div class="settings-section">
-                <h2 class="section-title">Notifications</h2>
-                
+                <h2 class="section-title">Preferences</h2>
+
                 <div class="setting-item">
                     <div>
                         <div class="setting-label">Notification</div>
@@ -562,12 +567,7 @@
                         <div class="toggle-switch" id="notificationToggle"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Behavior Section -->
-            <div class="settings-section">
-                <h2 class="section-title">Behavior</h2>
-                
                 <div class="setting-item">
                     <div>
                         <div class="setting-label">Auto-start Next Session</div>
@@ -587,12 +587,7 @@
                         <div class="toggle-switch" id="resetOnCompleteToggle"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Appearance Section -->
-            <div class="settings-section">
-                <h2 class="section-title">Appearance</h2>
-                
                 <div class="setting-item">
                     <div>
                         <div class="setting-label">Dark Mode</div>
@@ -602,11 +597,12 @@
                         <div class="toggle-switch" id="darkModeToggle"></div>
                     </div>
                 </div>
+
+                
             </div>
 
-            <!-- Save and Reset Buttons -->
+            <!-- Save Button -->
             <button type="submit" class="save-btn">Save Settings</button>
-            <button type="button" class="reset-btn" id="resetBtn">Reset to Defaults</button>
             
             <div class="status-message" id="statusMessage"></div>
         </form>
@@ -624,7 +620,7 @@
                 <div class="wheel-list" id="wheelList"></div>
                 <div class="wheel-indicator"></div>
             </div>
-            <div class="wheel-unit" id="wheelUnit">minutes</div>
+            <div class="wheel-unit" id="wheelUnit">mins</div>
         </div>
     </div>
 

@@ -19,7 +19,6 @@ class SettingsManager {
         // Form elements
         this.settingsForm = document.getElementById('settingsForm');
         this.backBtn = document.getElementById('backBtn');
-        this.resetBtn = document.getElementById('resetBtn');
         this.statusMessage = document.getElementById('statusMessage');
 
         // Timer duration inputs
@@ -32,6 +31,7 @@ class SettingsManager {
         this.autoStartToggle = document.getElementById('autoStartToggle');
         this.resetOnCompleteToggle = document.getElementById('resetOnCompleteToggle');
         this.darkModeToggle = document.getElementById('darkModeToggle');
+        // removed sticker toggle
 
 		// Wheel picker elements
 		this.pickerBackdrop = document.getElementById('pickerBackdrop');
@@ -63,14 +63,14 @@ class SettingsManager {
             this.saveSettings();
         });
 
-		// Reset button
-        this.resetBtn.addEventListener('click', () => this.resetToDefaults());
+        
 
         // Toggle switches
         this.notificationToggle.addEventListener('click', () => this.toggleSwitch(this.notificationToggle));
         this.autoStartToggle.addEventListener('click', () => this.toggleSwitch(this.autoStartToggle));
         this.resetOnCompleteToggle.addEventListener('click', () => this.toggleSwitch(this.resetOnCompleteToggle));
         this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+        // removed sticker toggle
 
 		// Input validation
         this.focusMinutesInput.addEventListener('input', () => this.validateInput(this.focusMinutesInput, 1, 60));
@@ -235,6 +235,13 @@ class SettingsManager {
 			this.validateInput(this.activePicker.input, this.activePicker.min, this.activePicker.max);
 		}
 
+		// Move focus to a safe element BEFORE hiding with aria-hidden
+		try {
+			this.pickerCancelBtn.blur();
+			this.pickerDoneBtn.blur();
+			(this.activePicker.input || this.backBtn || document.body).focus({ preventScroll: true });
+		} catch (_) {}
+
 		this.pickerBackdrop.classList.remove('show');
 		this.pickerBackdrop.setAttribute('aria-hidden', 'true');
 		this.activePicker.input = null;
@@ -274,6 +281,7 @@ class SettingsManager {
             this.updateToggleSwitch(this.autoStartToggle, settings.autoStartNext);
             this.updateToggleSwitch(this.resetOnCompleteToggle, settings.resetOnComplete);
             this.updateToggleSwitch(this.darkModeToggle, settings.darkMode);
+            // removed sticker toggle
 
             // Apply dark mode immediately
             document.body.classList.toggle('dark-mode', settings.darkMode);
@@ -347,34 +355,7 @@ class SettingsManager {
         }
     }
 
-    async resetToDefaults() {
-        if (confirm('Are you sure you want to reset all settings to defaults?')) {
-            try {
-                // Clear all settings
-                await chrome.storage.sync.clear();
-
-                // Reset form to defaults
-                this.focusMinutesInput.value = this.defaultSettings.focusMinutes;
-                this.breakMinutesInput.value = this.defaultSettings.breakMinutes;
-                this.totalSessionsInput.value = this.defaultSettings.totalSessions;
-
-                this.updateToggleSwitch(this.notificationToggle, this.defaultSettings.notificationsEnabled);
-                this.updateToggleSwitch(this.autoStartToggle, this.defaultSettings.autoStartNext);
-                this.updateToggleSwitch(this.resetOnCompleteToggle, this.defaultSettings.resetOnComplete);
-                this.updateToggleSwitch(this.darkModeToggle, this.defaultSettings.darkMode);
-
-                // Apply dark mode immediately
-                document.body.classList.toggle('dark-mode', this.defaultSettings.darkMode);
-
-                this.showStatusMessage('Settings reset to defaults', 'success');
-                console.log('Settings reset to defaults');
-
-            } catch (error) {
-                console.error('Error resetting settings:', error);
-                this.showStatusMessage('Error resetting settings', 'error');
-            }
-        }
-    }
+    
 
     showStatusMessage(message, type) {
         this.statusMessage.textContent = message;

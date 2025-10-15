@@ -1,4 +1,4 @@
-// Background script for Pomodoro Timer
+// Background script for Lapse
 // Handles timer persistence across browser restarts
 
 class BackgroundTimer {
@@ -130,10 +130,11 @@ class BackgroundTimer {
             'long-break': 'Long Break'
         };
 
+        const icon48 = chrome.runtime.getURL('icons/icon48.png');
         chrome.notifications.create({
             type: 'basic',
-            iconUrl: 'icons/icon48.png',
-            title: 'Pomodoro Timer',
+            iconUrl: icon48,
+            title: 'Lapse',
             message: `${modeText[state.mode]} session completed! Time for ${state.mode === 'focus' ? 'a break' : 'focus'}.`
         });
     }

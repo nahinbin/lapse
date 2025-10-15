@@ -1,4 +1,4 @@
-# Minimal Pomodoro Timer Chrome Extension
+# Lapse - Minimal Pomodoro Timer Chrome Extension
 
 A clean and minimal Pomodoro timer Chrome extension with a beautiful gradient design.
 
@@ -18,7 +18,7 @@ A clean and minimal Pomodoro timer Chrome extension with a beautiful gradient de
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
 4. Click "Load unpacked" and select the extension folder
-5. The Pomodoro timer icon should appear in your Chrome toolbar
+5. The Lapse icon should appear in your Chrome toolbar
 
 ## Creating Icons
 
