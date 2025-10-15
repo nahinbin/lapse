@@ -268,8 +268,9 @@ class SettingsManager {
 
     async loadSettings() {
         try {
-            const result = await chrome.storage.sync.get(Object.keys(this.defaultSettings));
-            const settings = { ...this.defaultSettings, ...result };
+            const stored = localStorage.getItem('lapse_settings');
+            const parsed = stored ? JSON.parse(stored) : {};
+            const settings = { ...this.defaultSettings, ...parsed };
 
             // Update form inputs
             this.focusMinutesInput.value = settings.focusMinutes;
@@ -328,18 +329,8 @@ class SettingsManager {
                 return;
             }
 
-            // Save to Chrome storage
-            await chrome.storage.sync.set(settings);
-
-            // Notify background script about settings change
-            try {
-                chrome.runtime.sendMessage({
-                    action: 'settingsUpdated',
-                    settings: settings
-                });
-            } catch (error) {
-                console.log('Background script not available for settings update');
-            }
+            // Save to localStorage and notify other tabs via storage event
+            localStorage.setItem('lapse_settings', JSON.stringify(settings));
 
             this.showStatusMessage('Settings saved successfully!', 'success');
             console.log('Settings saved:', settings);
@@ -368,12 +359,12 @@ class SettingsManager {
     }
 
     goBack() {
-        // Try to close the settings window and return to popup
+        // Try to close the settings window and return to app
         if (window.opener) {
             window.close();
         } else {
-            // If opened in new tab, navigate back to popup
-            window.location.href = chrome.runtime.getURL('popup.html');
+            // If opened in new tab, navigate back to app
+            window.location.href = 'index.html';
         }
     }
 }

@@ -25,7 +25,7 @@ class PomodoroTimer {
         this.initializeElements();
         this.bindEvents();
         this.loadSettings();
-        this.loadState();
+        // In web app mode we don't use background state
         this.updateDisplay();
         this.setupSettingsListener();
         
@@ -109,9 +109,9 @@ class PomodoroTimer {
     }
     
     expandToFullscreen() {
-        // Open fullscreen window
+        // Open fullscreen window (relative URL in web app)
         const fullscreenWindow = window.open(
-            chrome.runtime.getURL('fullscreen.html'),
+            'fullscreen.html',
             'lapse-fullscreen',
             'width=800,height=600,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no'
         );
@@ -123,18 +123,8 @@ class PomodoroTimer {
     }
     
     openSettings() {
-        console.log('Settings button clicked - opening settings page');
-        // Open settings page in a new window
-        const settingsWindow = window.open(
-            chrome.runtime.getURL('settings.html'),
-            'lapse-settings',
-            'width=500,height=700,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no'
-        );
-        
-        // Focus the new window
-        if (settingsWindow) {
-            settingsWindow.focus();
-        }
+        console.log('Settings button clicked - navigating to settings');
+        window.location.href = 'settings.html';
     }
     
     updateButtonLayout() {
@@ -188,29 +178,6 @@ class PomodoroTimer {
         
         this.updateButtonLayout();
         
-        // Try to send message to background script, but don't fail if it doesn't work
-        try {
-            chrome.runtime.sendMessage({
-                action: 'startTimer',
-                currentTime: this.currentTime,
-                state: {
-                    isRunning: this.isRunning,
-                    isPaused: this.isPaused,
-                    currentTime: this.currentTime,
-                    sessionNumber: this.sessionNumber,
-                    mode: this.mode
-                }
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.log('Background script not available, using local timer');
-                } else {
-                    console.log('Background script response:', response);
-                }
-            });
-        } catch (error) {
-            console.log('Background script not available, using local timer');
-        }
-        
         // Start local display update
         this.startLocalTimer();
         console.log('Timer started successfully');
@@ -246,22 +213,6 @@ class PomodoroTimer {
         
         this.updateButtonLayout();
         
-        // Try to send message to background script
-        try {
-            chrome.runtime.sendMessage({
-                action: 'pauseTimer',
-                state: {
-                    isRunning: this.isRunning,
-                    isPaused: this.isPaused,
-                    currentTime: this.currentTime,
-                    sessionNumber: this.sessionNumber,
-                    mode: this.mode
-                }
-            });
-        } catch (error) {
-            console.log('Background script not available');
-        }
-        
         this.stopLocalTimer();
     }
     
@@ -280,63 +231,11 @@ class PomodoroTimer {
         // Reset to current mode's duration
         this.currentTime = this.durations[this.mode];
         
-        // Try to send message to background script
-        try {
-            chrome.runtime.sendMessage({
-                action: 'resetTimer',
-                state: {
-                    isRunning: this.isRunning,
-                    isPaused: this.isPaused,
-                    currentTime: this.currentTime,
-                    sessionNumber: this.sessionNumber,
-                    mode: this.mode
-                }
-            });
-        } catch (error) {
-            console.log('Background script not available');
-        }
-        
         this.stopLocalTimer();
         this.updateDisplay();
     }
     
-    startDisplayUpdate() {
-        this.displayInterval = setInterval(() => {
-            this.updateDisplayFromBackground();
-        }, 1000);
-    }
-    
-    stopDisplayUpdate() {
-        if (this.displayInterval) {
-            clearInterval(this.displayInterval);
-            this.displayInterval = null;
-        }
-    }
-    
-    async updateDisplayFromBackground() {
-        try {
-            const state = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({ action: 'getState' }, resolve);
-            });
-            
-            if (state) {
-                this.currentTime = state.currentTime;
-                this.sessionNumber = state.sessionNumber;
-                this.mode = state.mode;
-                this.isRunning = state.isRunning;
-                this.isPaused = state.isPaused;
-                
-                this.updateDisplay();
-                
-                // If timer completed while popup was closed
-                if (!this.isRunning && !this.isPaused && this.currentTime === 0) {
-                    this.completeSession();
-                }
-            }
-        } catch (error) {
-            console.log('Error updating display from background:', error);
-        }
-    }
+    // Background sync removed for web app
     
     tick() {
         if (this.currentTime > 0) {
@@ -477,8 +376,8 @@ class PomodoroTimer {
                 
                 const notification = new Notification(title, {
                     body: body,
-                    icon: chrome.runtime.getURL('icons/icon48.png'),
-                    badge: chrome.runtime.getURL('icons/icon32.png'),
+                    icon: 'icons/icon32.png',
+                    badge: 'icons/icon32.png',
                     tag: 'pomodoro-timer',
                     requireInteraction: false
                 });
@@ -495,10 +394,8 @@ class PomodoroTimer {
     
     async loadSettings() {
         try {
-            const result = await chrome.storage.sync.get([
-                'focusMinutes', 'breakMinutes', 'longBreakMinutes', 'totalSessions',
-                'notificationsEnabled', 'autoStartNext', 'resetOnComplete', 'darkMode'
-            ]);
+            const stored = localStorage.getItem('lapse_settings');
+            const result = stored ? JSON.parse(stored) : {};
             
             // Update timer durations
             if (result.focusMinutes) {
@@ -539,70 +436,20 @@ class PomodoroTimer {
         }
     }
 
-    async loadState() {
-        console.log('Loading state from background script...');
-        
-        // Try to load from background script, but don't fail if it doesn't work
-        try {
-            const state = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({ action: 'getState' }, resolve);
-            });
-            
-            if (state) {
-                console.log('Loaded state from background:', state);
-                this.isRunning = state.isRunning || false;
-                this.isPaused = state.isPaused || false;
-                this.currentTime = state.currentTime || this.durations[this.mode];
-                this.sessionNumber = state.sessionNumber || 1;
-                this.mode = state.mode || 'focus';
-                
-                // If timer was running, resume display updates
-                if (this.isRunning && !this.isPaused) {
-                    console.log('Timer was running, resuming...');
-                    this.startBtn.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                        </svg>
-                    `;
-                    this.startBtn.classList.add('paused');
-                    this.startLocalTimer();
-                } else if (this.isPaused) {
-                    console.log('Timer was paused');
-                    this.startBtn.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                    `;
-                } else {
-                    console.log('Timer was stopped');
-                }
-                
-                this.updateDisplay();
-                this.updateButtonLayout();
-            } else {
-                console.log('No state found, using default state');
-                this.updateDisplay();
-                this.updateButtonLayout();
-            }
-        } catch (error) {
-            console.log('Background script not available, using default state:', error);
-            this.updateDisplay();
-            this.updateButtonLayout();
-        }
-    }
+    // loadState removed in web app mode
 
     setupSettingsListener() {
-        // Listen for settings updates from the settings page
+        // Listen for settings updates via localStorage events
         try {
-            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-                if (message.action === 'settingsUpdated') {
-                    console.log('Settings updated message received, reloading...');
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'lapse_settings') {
+                    console.log('Settings updated via storage event, reloading...');
                     this.loadSettings();
                     this.updateDisplay();
                 }
             });
         } catch (error) {
-            console.log('Could not setup settings listener:', error);
+            console.log('Could not setup storage listener:', error);
         }
     }
 }
@@ -622,9 +469,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
     
     // Also check settings after a longer delay to ensure they're loaded
-    setTimeout(async () => {
+    setTimeout(() => {
         try {
-            const result = await chrome.storage.sync.get(['darkMode']);
+            const result = JSON.parse(localStorage.getItem('lapse_settings') || '{}');
             if (result.darkMode !== undefined) {
                 document.body.classList.toggle('dark-mode', result.darkMode);
                 console.log('Dark mode applied on DOM load:', result.darkMode);

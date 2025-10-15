@@ -121,5 +121,12 @@
     </div>
     
     <script src="script.js"></script>
+    <script>
+        // Apply persisted dark mode early in fullscreen
+        try {
+            const settings = JSON.parse(localStorage.getItem('lapse_settings') || '{}');
+            if (settings.darkMode) document.body.classList.add('dark-mode');
+        } catch (_) {}
+    </script>
 </body>
 </html>
