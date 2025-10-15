@@ -4,6 +4,7 @@
 class BackgroundTimer {
     constructor() {
         this.setupAlarmListener();
+        // Use callback-based Chrome APIs to avoid promise rejections when SW is idle
         this.loadInitialState();
         this.ensureInitialState();
     }
@@ -16,64 +17,90 @@ class BackgroundTimer {
         });
     }
 
-    async loadInitialState() {
-        console.log('Loading initial state...');
-        const result = await chrome.storage.local.get(['pomodoroState']);
-        if (result.pomodoroState) {
-            const state = result.pomodoroState;
-            console.log('Found existing state:', state);
-            
-            if (state.isRunning && !state.isPaused && state.startTime) {
-                // Calculate remaining time based on elapsed time since start
-                const now = Date.now();
-                const elapsed = Math.floor((now - state.startTime) / 1000);
-                const remaining = Math.max(0, state.currentTime - elapsed);
-                
-                console.log(`Timer was running. Elapsed: ${elapsed}s, Remaining: ${remaining}s`);
-                
-                if (remaining > 0) {
-                    // Update state with remaining time and new start time
-                    const updatedState = {
-                        ...state,
-                        currentTime: remaining,
-                        startTime: now // Reset start time for accurate future calculations
-                    };
-                    
-                    chrome.storage.local.set({ pomodoroState: updatedState });
-                    
-                    // Set alarm for remaining time (convert seconds to minutes)
-                    chrome.alarms.create('pomodoro-timer', {
-                        delayInMinutes: remaining / 60
-                    });
-                    
-                    console.log(`Timer resumed: ${remaining} seconds remaining`);
-                } else {
-                    // Timer should have completed while browser was closed
-                    console.log('Timer completed while browser was closed');
-                    this.handleTimerComplete();
+    loadInitialState() {
+        try {
+            console.log('Loading initial state...');
+            chrome.storage.local.get(['pomodoroState'], (result) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('storage.get error:', chrome.runtime.lastError.message);
+                    return;
                 }
-            } else {
-                console.log('Timer was not running or was paused');
-            }
-        } else {
-            console.log('No existing state found');
+                if (result && result.pomodoroState) {
+                    const state = result.pomodoroState;
+                    console.log('Found existing state:', state);
+                    
+                    if (state.isRunning && !state.isPaused && state.startTime) {
+                        // Calculate remaining time based on elapsed time since start
+                        const now = Date.now();
+                        const elapsed = Math.floor((now - state.startTime) / 1000);
+                        const remaining = Math.max(0, state.currentTime - elapsed);
+                        
+                        console.log(`Timer was running. Elapsed: ${elapsed}s, Remaining: ${remaining}s`);
+                        
+                        if (remaining > 0) {
+                            // Update state with remaining time and new start time
+                            const updatedState = {
+                                ...state,
+                                currentTime: remaining,
+                                startTime: now // Reset start time for accurate future calculations
+                            };
+                            
+                            chrome.storage.local.set({ pomodoroState: updatedState }, () => {
+                                if (chrome.runtime.lastError) {
+                                    console.warn('storage.set error:', chrome.runtime.lastError.message);
+                                }
+                            });
+                            
+                            // Set alarm for remaining time (convert seconds to minutes)
+                            chrome.alarms.create('pomodoro-timer', {
+                                delayInMinutes: remaining / 60
+                            });
+                            
+                            console.log(`Timer resumed: ${remaining} seconds remaining`);
+                        } else {
+                            // Timer should have completed while browser was closed
+                            console.log('Timer completed while browser was closed');
+                            this.handleTimerComplete();
+                        }
+                    } else {
+                        console.log('Timer was not running or was paused');
+                    }
+                } else {
+                    console.log('No existing state found');
+                }
+            });
+        } catch (error) {
+            console.warn('loadInitialState exception:', error);
         }
     }
 
-    async ensureInitialState() {
-        const result = await chrome.storage.local.get(['pomodoroState']);
-        if (!result.pomodoroState) {
-            // Set up initial state if none exists
-            const initialState = {
-                isRunning: false,
-                isPaused: false,
-                currentTime: 25 * 60, // 25 minutes in seconds
-                sessionNumber: 1,
-                mode: 'focus',
-                startTime: null
-            };
-            chrome.storage.local.set({ pomodoroState: initialState });
-            console.log('Initial state created');
+    ensureInitialState() {
+        try {
+            chrome.storage.local.get(['pomodoroState'], (result) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('storage.get error:', chrome.runtime.lastError.message);
+                    return;
+                }
+                if (!result || !result.pomodoroState) {
+                    // Set up initial state if none exists
+                    const initialState = {
+                        isRunning: false,
+                        isPaused: false,
+                        currentTime: 25 * 60, // 25 minutes in seconds
+                        sessionNumber: 1,
+                        mode: 'focus',
+                        startTime: null
+                    };
+                    chrome.storage.local.set({ pomodoroState: initialState }, () => {
+                        if (chrome.runtime.lastError) {
+                            console.warn('storage.set error:', chrome.runtime.lastError.message);
+                        }
+                    });
+                    console.log('Initial state created');
+                }
+            });
+        } catch (error) {
+            console.warn('ensureInitialState exception:', error);
         }
     }
 
@@ -131,12 +158,21 @@ class BackgroundTimer {
         };
 
         const icon48 = chrome.runtime.getURL('icons/icon48.png');
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: icon48,
-            title: 'Lapse',
-            message: `${modeText[state.mode]} session completed! Time for ${state.mode === 'focus' ? 'a break' : 'focus'}.`
-        });
+        try {
+            // Use callback form to avoid Promise rejection if SW is inactive
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: icon48,
+                title: 'Lapse',
+                message: `${modeText[state.mode]} session completed! Time for ${state.mode === 'focus' ? 'a break' : 'focus'}.`
+            }, (notificationId) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('Notification create error:', chrome.runtime.lastError.message);
+                }
+            });
+        } catch (error) {
+            console.warn('Failed to create notification:', error);
+        }
     }
 
     // Calculate current remaining time based on stored start time

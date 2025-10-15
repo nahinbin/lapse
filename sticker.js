@@ -31,8 +31,7 @@
 			</div>
 		`;
 		document.documentElement.appendChild(root);
-		// Make draggable
-		makeDraggable(root);
+		// No interactions; purely display-only
 		return root;
 	}
 
@@ -51,16 +50,16 @@
 		const timeEl = root.querySelector('#lapse-sticker-time');
 
         // Respect global sticker enable setting (stored in sync)
-        // If enabled, show sticker even if timer is not running; otherwise only show when running
+        // Show sticker ONLY while timer is running (not paused)
 		let show = false;
         try {
-            // We'll read sync flag quickly and cache decision via closure; this is fast and tiny
-            // Note: using async here would complicate flow; read from cache updated by listener below
-			// Default to showing when the user hasn't explicitly disabled the sticker
-			show = (window.__lapseStickerEnabled !== false) || (state && state.isRunning && !state.isPaused);
+            // Must be enabled AND actively running
+            const enabled = (window.__lapseStickerEnabled !== false);
+            const running = !!(state && state.isRunning && !state.isPaused);
+            show = enabled && running;
         } catch (_) {
-			// If we cannot read the flag, prefer showing so the user sees the control
-			show = true;
+            // If we cannot read the flag, default to hiding unless we know it's running
+            show = !!(state && state.isRunning && !state.isPaused);
         }
 		root.classList.toggle(HIDE_CLASS, !show);
 
@@ -109,110 +108,6 @@
 		}
 	}
 
-	// ---- Draggable + Position Persistence ----
-	let dragState = null;
-
-	function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
-
-	function getStickerRect(root) {
-		const r = root.getBoundingClientRect();
-		return { width: r.width || 120, height: r.height || 40 };
-	}
-
-	function applySavedPosition(root, pos) {
-		if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
-		root.style.left = pos.left + 'px';
-		root.style.top = pos.top + 'px';
-		root.style.right = 'auto';
-		root.style.bottom = 'auto';
-	}
-
-	function clampAndApply(root) {
-		const rect = getStickerRect(root);
-		const maxLeft = Math.max(0, (window.innerWidth || 0) - rect.width - 8);
-		const maxTop = Math.max(0, (window.innerHeight || 0) - rect.height - 8);
-		const left = parseFloat(root.style.left || '');
-		const top = parseFloat(root.style.top || '');
-		if (Number.isFinite(left) && Number.isFinite(top)) {
-			const clampedLeft = clamp(left, 8, maxLeft);
-			const clampedTop = clamp(top, 8, maxTop);
-			root.style.left = clampedLeft + 'px';
-			root.style.top = clampedTop + 'px';
-		}
-	}
-
-	function savePositionDebounced(left, top) {
-		if (savePositionDebounced.t) clearTimeout(savePositionDebounced.t);
-		savePositionDebounced.t = setTimeout(() => {
-			try { chrome.storage.sync.set({ stickerPosition: { left, top } }); } catch (_) {}
-		}, 120);
-	}
-
-	async function loadAndApplyPosition(root) {
-		try {
-			const res = await chrome.storage.sync.get(['stickerPosition']);
-			if (res && res.stickerPosition) {
-				applySavedPosition(root, res.stickerPosition);
-				clampAndApply(root);
-			}
-		} catch (_) { /* ignore */ }
-	}
-
-	function makeDraggable(root) {
-		const handle = root.querySelector('.card') || root;
-		const onPointerDown = (e) => {
-			const isTouch = e.type === 'touchstart';
-			const point = isTouch ? e.touches[0] : e;
-			const rect = root.getBoundingClientRect();
-			// Switch to left/top anchoring on first drag
-			root.style.left = rect.left + 'px';
-			root.style.top = rect.top + 'px';
-			root.style.right = 'auto';
-			root.style.bottom = 'auto';
-			dragState = {
-				offsetX: point.clientX - rect.left,
-				offsetY: point.clientY - rect.top
-			};
-			document.addEventListener('mousemove', onPointerMove, { passive: false });
-			document.addEventListener('mouseup', onPointerUp, { passive: true });
-			document.addEventListener('touchmove', onPointerMove, { passive: false });
-			document.addEventListener('touchend', onPointerUp, { passive: true });
-			if (!isTouch) e.preventDefault();
-		};
-
-		const onPointerMove = (e) => {
-			if (!dragState) return;
-			const point = e.touches ? e.touches[0] : e;
-			const rect = getStickerRect(root);
-			const maxLeft = Math.max(0, (window.innerWidth || 0) - rect.width - 8);
-			const maxTop = Math.max(0, (window.innerHeight || 0) - rect.height - 8);
-			let left = (point.clientX - dragState.offsetX);
-			let top = (point.clientY - dragState.offsetY);
-			left = clamp(left, 8, maxLeft);
-			top = clamp(top, 8, maxTop);
-			root.style.left = left + 'px';
-			root.style.top = top + 'px';
-			savePositionDebounced(left, top);
-			e.preventDefault();
-		};
-
-		const onPointerUp = () => {
-			dragState = null;
-			document.removeEventListener('mousemove', onPointerMove);
-			document.removeEventListener('mouseup', onPointerUp);
-			document.removeEventListener('touchmove', onPointerMove);
-			document.removeEventListener('touchend', onPointerUp);
-		};
-
-		handle.addEventListener('mousedown', onPointerDown);
-		handle.addEventListener('touchstart', onPointerDown, { passive: false });
-
-		// Apply saved position on creation
-		loadAndApplyPosition(root);
-		// Keep in view on resize
-		window.addEventListener('resize', () => clampAndApply(root));
-	}
-
     function listenForStorageChanges() {
 		try {
             chrome.storage.onChanged.addListener((changes, area) => {
@@ -232,7 +127,7 @@
             // If not set, default to true so sticker shows everywhere by default
             window.__lapseStickerEnabled = (res && typeof res.stickerEnabled !== 'undefined') ? (res.stickerEnabled === true) : true;
             window.__lapseDarkMode = !!(res && res.darkMode === true);
-        } catch (_) { window.__lapseStickerEnabled = false; window.__lapseDarkMode = false; }
+        } catch (_) { window.__lapseStickerEnabled = true; window.__lapseDarkMode = false; }
         try {
             chrome.storage.onChanged.addListener((changes, area) => {
                 if (area === 'sync' && changes.stickerEnabled) {
