@@ -10,6 +10,11 @@
         body.app { width: 100vw; height: 100vh; overflow: hidden; box-shadow: none; }
     </style>
     <link rel="icon" href="icons/icon32.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f1f1f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon128.png">
 </head>
 <body class="app">
     <a href="settings.html" class="settings-btn" id="settingsBtn" title="Settings">
@@ -55,6 +60,13 @@
             const settings = JSON.parse(localStorage.getItem('lapse_settings') || '{}');
             if (settings.darkMode) document.body.classList.add('dark-mode');
         } catch (_) {}
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('service-worker.js');
+            });
+        }
     </script>
 </body>
 </html>

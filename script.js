@@ -360,7 +360,7 @@ class PomodoroTimer {
             this.showBrowserNotification();
         }
     }
-
+    
     async showBrowserNotification() {
         try {
             // Request notification permission if not already granted
@@ -481,3 +481,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 200);
 });
+
+// Register service worker and handle install prompt
+(function() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('service-worker.js');
+        });
+    }
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('PWA install prompt saved');
+        // You could show a custom install button here if desired
+    });
+
+    window.addEventListener('appinstalled', () => {
+        console.log('PWA installed');
+        deferredPrompt = null;
+    });
+})();
