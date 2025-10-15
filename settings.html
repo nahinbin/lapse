@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Settings-specific styles */
+        html {
+            overflow: auto !important; /* keep scroll behavior at root */
+            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;    /* Firefox */
+        }
+
+        html::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        body {
+            overflow: auto !important; /* keep scroll behavior */
+            width: auto !important;
+            height: auto !important;
+            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;    /* Firefox */
+        }
+
+        /* Hide scrollbar in Chromium/WebKit while preserving scroll */
+        body::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        .settings-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 16px;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .settings-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: #333;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .setting-description { display: none; }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-input {
+            width: 60px;
+            padding: 6px 8px;
+            border: 1px solid #e6e6e6;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            text-align: center;
+            background: #fff;
+            appearance: none;
+            -moz-appearance: textfield;
+            cursor: pointer;
+            user-select: none;
+            caret-color: transparent;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.06s ease;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #cfcfcf;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        }
+
+        /* Hide native number spinners */
+        .time-input::-webkit-outer-spin-button,
+        .time-input::-webkit-inner-spin-button,
+        .number-input::-webkit-outer-spin-button,
+        .number-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #333;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .number-input {
+            width: 50px;
+            padding: 6px 8px;
+            border: 1px solid #e6e6e6;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            text-align: center;
+            background: #fff;
+            appearance: none;
+            -moz-appearance: textfield;
+            cursor: pointer;
+            user-select: none;
+            caret-color: transparent;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.06s ease;
+        }
+
+        .number-input:focus {
+            outline: none;
+            border-color: #cfcfcf;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px 14px;
+            background: #1f1f1f;
+            color: #fff;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px; /* medium radius: not too round, not sharp */
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.06s ease;
+            margin-top: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+        }
+
+        .save-btn:hover {
+            background: #2a2a2a;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+        }
+
+        .save-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.12), 0 0 0 1px #2a2a2a;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 10px 14px;
+            background: #f7f7f7;
+            color: #333;
+            border: 1px solid #e3e3e3;
+            border-radius: 10px; /* medium radius */
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 8px;
+        }
+
+        .reset-btn:hover {
+            background: #efefef;
+            color: #111;
+            border-color: #d6d6d6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .reset-btn:active {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+        }
+
+        .reset-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.08), 0 0 0 1px #d6d6d6;
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.show {
+            opacity: 1;
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .settings-container {
+            background: #1a1a1a;
+        }
+
+        body.dark-mode .settings-title {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .section-title {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .setting-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .setting-description {
+            color: #999;
+        }
+
+        
+
+        body.dark-mode .time-input,
+        body.dark-mode .number-input {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .time-input:focus,
+        body.dark-mode .number-input:focus {
+            border-color: #4a4a4a;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.5);
+        }
+
+        body.dark-mode .toggle-switch {
+            background: #444;
+        }
+
+        body.dark-mode .toggle-switch.active {
+            background: #666;
+        }
+
+        body.dark-mode .save-btn {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+            color: #eaeaea;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        body.dark-mode .save-btn:hover {
+            background: #333;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+        }
+
+        body.dark-mode .reset-btn {
+            background: #242424;
+            border-color: #333;
+            color: #cfcfcf;
+        }
+
+        body.dark-mode .reset-btn:hover {
+            background: #2b2b2b;
+            border-color: #3a3a3a;
+            color: #f0f0f0;
+        }
+
+        body.dark-mode .back-btn {
+            color: #999;
+        }
+
+        body.dark-mode .back-btn:hover {
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .status-message.success {
+            background: #1e4d2b;
+            color: #a8d5ba;
+            border-color: #2d5a3d;
+        }
+
+        body.dark-mode .status-message.error {
+            background: #4d1e1e;
+            color: #d5a8a8;
+            border-color: #5a2d2d;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .settings-container {
+                padding: 15px;
+            }
+            
+            .settings-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Wheel picker modal */
+        .picker-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+        }
+
+        .picker-backdrop.show { display: flex; }
+
+        .wheel-picker {
+            width: 100%;
+            max-width: 400px;
+            background: #f8f8f8;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+            padding: 10px 0 8px 0;
+            transform: scale(0.98);
+            animation: pickerPopIn 160ms ease-out forwards;
+        }
+
+        @keyframes pickerPopIn {
+            from { transform: scale(0.98); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .picker-header,
+        .picker-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+        }
+
+        .picker-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #111;
+            margin: 0 auto;
+        }
+
+        .picker-btn {
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 8px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .picker-btn:active { background: rgba(0,0,0,0.06); }
+
+        .wheel-area {
+            position: relative;
+            height: 180px; /* shows ~5 items */
+            overflow: hidden;
+        }
+
+        .wheel-list {
+            height: 100%;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .wheel-list::-webkit-scrollbar { display: none; }
+
+        .wheel-item {
+            height: 36px;
+            line-height: 36px;
+            text-align: center;
+            font-size: 1.05rem;
+            color: #111;
+            scroll-snap-align: center;
+            user-select: none;
+        }
+
+        .wheel-indicator {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            right: 12px;
+            height: 36px;
+            margin-top: -18px; /* half height */
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.12);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+            pointer-events: none;
+        }
+
+        .wheel-unit {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+            padding: 4px 0 8px 0;
+        }
+
+        /* Dark mode */
+        body.dark-mode .picker-backdrop { background: rgba(0,0,0,0.55); }
+        body.dark-mode .wheel-picker { background: #1f1f1f; box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+        body.dark-mode .picker-title { color: #e0e0e0; }
+        body.dark-mode .picker-btn { color: #4da3ff; }
+        body.dark-mode .wheel-item { color: #e0e0e0; }
+        body.dark-mode .wheel-indicator { border-color: rgba(255,255,255,0.12); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4); }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1 class="settings-title">Settings</h1>
+            <button class="back-btn" id="backBtn" title="Back to Timer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="settingsForm">
+            <!-- Timer Durations Section -->
+            <div class="settings-section">
+                <h2 class="section-title">Timer Durations</h2>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Focus Session</div>
+                        <div class="setting-description">Time for focused work</div>
+                    </div>
+                    <div class="setting-control">
+                        <input type="text" inputmode="none" class="time-input" id="focusMinutes" value="25" readonly>
+                        <span>minutes</span>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Break</div>
+                        <div class="setting-description">Rest between focus sessions</div>
+                    </div>
+                    <div class="setting-control">
+                        <input type="text" inputmode="none" class="time-input" id="breakMinutes" value="5" readonly>
+                        <span>minutes</span>
+                    </div>
+                </div>
+
+                
+
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Session per Cycle</div>
+                        <div class="setting-description">Number of focus sessions before long break</div>
+                    </div>
+                    <div class="setting-control">
+                        <input type="text" inputmode="none" class="number-input" id="totalSessions" value="4" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div class="settings-section">
+                <h2 class="section-title">Notifications</h2>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Notification</div>
+                        <div class="setting-description">Enable sound and desktop notifications</div>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="notificationToggle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Behavior Section -->
+            <div class="settings-section">
+                <h2 class="section-title">Behavior</h2>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Auto-start Next Session</div>
+                        <div class="setting-description">Automatically begin next timer</div>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="autoStartToggle"></div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Reset on Session Complete</div>
+                        <div class="setting-description">Reset timer when session ends</div>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="resetOnCompleteToggle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div class="settings-section">
+                <h2 class="section-title">Appearance</h2>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Dark Mode</div>
+                        <div class="setting-description">Use dark theme for better night viewing</div>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="darkModeToggle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save and Reset Buttons -->
+            <button type="submit" class="save-btn">Save Settings</button>
+            <button type="button" class="reset-btn" id="resetBtn">Reset to Defaults</button>
+            
+            <div class="status-message" id="statusMessage"></div>
+        </form>
+    </div>
+
+    <!-- Wheel Picker Modal -->
+    <div class="picker-backdrop" id="pickerBackdrop" aria-hidden="true">
+        <div class="wheel-picker" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+            <div class="picker-header">
+                <button class="picker-btn" id="pickerCancelBtn" type="button">Cancel</button>
+                <div class="picker-title" id="pickerTitle">Select</div>
+                <button class="picker-btn" id="pickerDoneBtn" type="button">Done</button>
+            </div>
+            <div class="wheel-area">
+                <div class="wheel-list" id="wheelList"></div>
+                <div class="wheel-indicator"></div>
+            </div>
+            <div class="wheel-unit" id="wheelUnit">minutes</div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>
